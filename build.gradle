@@ -37,6 +37,7 @@ repositories {
 }
 
 dependencies {
+    compile "org.slf4j:slf4j-api:1.7.25"
     compile "org.springframework:spring-jdbc:4.1.7.RELEASE"
     compile "com.github.jsqlparser:jsqlparser:0.9.6"
 

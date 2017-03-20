@@ -3,7 +3,7 @@ package io.zhudy.spring.jdbc;
 /**
  * @author Kevin Zou <kevinz@weghst.com>
  */
-class RowBounds {
+public class RowBounds {
 
     private long offset;
     private int limit;

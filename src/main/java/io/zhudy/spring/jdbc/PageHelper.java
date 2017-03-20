@@ -8,7 +8,7 @@ import org.springframework.util.Assert;
  */
 public final class PageHelper {
 
-    private static final ThreadLocal<RowBounds> TL_ROW_BOUNDS = new NamedThreadLocal<>("spring-jdbc-ext-RowBounds");
+    static final ThreadLocal<RowBounds> TL_ROW_BOUNDS = new NamedThreadLocal<>("spring-jdbc-ext-RowBounds");
 
     /**
      * @param offset
@@ -34,5 +34,4 @@ public final class PageHelper {
     static void clear() {
         TL_ROW_BOUNDS.remove();
     }
-
 }

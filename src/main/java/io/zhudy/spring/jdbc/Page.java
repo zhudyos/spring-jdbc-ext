@@ -5,22 +5,12 @@ import java.util.List;
 /**
  * @author Kevin Zou <kevinz@weghst.com>
  */
-public interface PageList<E> {
+public interface Page<E> {
 
     /**
      * @return
      */
     long getTotal();
-
-    /**
-     * @return
-     */
-    long getOffset();
-
-    /**
-     * @return
-     */
-    int getLimit();
 
     /**
      * @return

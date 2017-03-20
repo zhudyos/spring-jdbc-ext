@@ -1,19 +1,14 @@
 package io.zhudy.spring.jdbc.dialect;
 
-import io.zhudy.spring.jdbc.Dialect;
-import io.zhudy.spring.jdbc.PageResult;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementSetter;
+import io.zhudy.spring.jdbc.RowBounds;
 
 /**
  * @author Kevin Zou <kevinz@weghst.com>
  */
-public class MySQLDialect implements Dialect {
-
-    private JdbcTemplate jdbcTemplate;
+public class MySQLDialect extends AbstractDialect {
 
     @Override
-    public PageResult query(String sql, PreparedStatementSetter pss) {
-        return null;
+    protected String convertToPageSql(String sql, RowBounds rowBounds) {
+        return sql + " limit " + rowBounds.getOffset() + ", " + rowBounds.getLimit();
     }
 }

@@ -1,11 +1,9 @@
 package io.zhudy.spring.jdbc;
 
-import java.util.List;
-
 /**
  * @author Kevin Zou <kevinz@weghst.com>
  */
-public interface Page<E> {
+public interface Page<T> {
 
     /**
      * @return
@@ -15,5 +13,5 @@ public interface Page<E> {
     /**
      * @return
      */
-    List<E> getRows();
+    T getRows();
 }

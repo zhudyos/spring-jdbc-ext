@@ -4,12 +4,11 @@ import io.zhudy.spring.jdbc.Page;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * @author Kevin Zou <kevinz@weghst.com>
  */
-class PageArrayList<E> extends ArrayList<E> implements Page<E> {
+class PageArrayList<T> extends ArrayList implements Page<T> {
 
     private long total;
 
@@ -17,8 +16,8 @@ class PageArrayList<E> extends ArrayList<E> implements Page<E> {
         this.total = total;
     }
 
-    PageArrayList(Collection<? extends E> c, long total) {
-        super(c);
+    PageArrayList(T c, long total) {
+        super((Collection) c);
         this.total = total;
     }
 
@@ -28,7 +27,7 @@ class PageArrayList<E> extends ArrayList<E> implements Page<E> {
     }
 
     @Override
-    public List<E> getRows() {
-        return this;
+    public T getRows() {
+        return (T) this;
     }
 }

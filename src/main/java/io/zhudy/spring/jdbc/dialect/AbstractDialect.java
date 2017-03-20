@@ -1,7 +1,6 @@
 package io.zhudy.spring.jdbc.dialect;
 
 import io.zhudy.spring.jdbc.Dialect;
-import io.zhudy.spring.jdbc.Page;
 import io.zhudy.spring.jdbc.PageQueryException;
 import io.zhudy.spring.jdbc.RowBounds;
 import net.sf.jsqlparser.JSQLParserException;
@@ -11,9 +10,9 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,14 +38,14 @@ public abstract class AbstractDialect implements Dialect {
     private final ResultSetExtractor<Long> COUNT_RSE = rs -> rs.getLong(1);
 
 
-    protected JdbcOperations jdbcOperations;
+    protected NamedParameterJdbcOperations namedParameterJdbcOperations;
 
-    protected AbstractDialect(JdbcOperations jdbcOperations) {
-        this.jdbcOperations = jdbcOperations;
+    protected AbstractDialect(NamedParameterJdbcOperations namedParameterJdbcOperations) {
+        this.namedParameterJdbcOperations = namedParameterJdbcOperations;
     }
 
     @Override
-    public <E> Page<E> query(String sql, PreparedStatementSetter pss, ResultSetExtractor<List<E>> rse, RowBounds rowBounds) {
+    public <T> T query(String sql, SqlParameterSource sps, ResultSetExtractor<T> rse, RowBounds rowBounds) {
         log.debug("origin sql: {}", sql);
 
         long total;
@@ -54,10 +53,10 @@ public abstract class AbstractDialect implements Dialect {
             String csql = getCountSql(sql);
             log.debug("count sql: {}", sql);
 
-            total = jdbcOperations.query(csql, pss, COUNT_RSE);
+            total = namedParameterJdbcOperations.query(csql, sps, COUNT_RSE);
             log.debug("total: {}", total);
             if (total <= 0) {
-                return new PageArrayList<>(total);
+                return (T)new PageArrayList<>(total);
             }
         } catch (JSQLParserException e) {
             log.error("convert to count sql error [{}]", sql);
@@ -68,8 +67,8 @@ public abstract class AbstractDialect implements Dialect {
             String psql = convertToPageSql(sql, rowBounds);
             log.debug("page sql: {}", psql);
 
-            List<E> rows = jdbcOperations.query(psql, pss, rse);
-            return new PageArrayList<>(rows, total);
+            T rows = namedParameterJdbcOperations.query(psql, sps, rse);
+            return (T) new PageArrayList<>(rows, total);
         } catch (JSQLParserException e) {
             log.error("convert to page sql error [{}]", sql);
             throw new PageQueryException(sql, e);

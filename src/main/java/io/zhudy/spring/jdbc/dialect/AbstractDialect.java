@@ -1,6 +1,7 @@
 package io.zhudy.spring.jdbc.dialect;
 
 import io.zhudy.spring.jdbc.Dialect;
+import io.zhudy.spring.jdbc.GroupSqlParameterSource;
 import io.zhudy.spring.jdbc.PageQueryException;
 import io.zhudy.spring.jdbc.RowBounds;
 import net.sf.jsqlparser.JSQLParserException;
@@ -82,10 +83,12 @@ public abstract class AbstractDialect implements Dialect {
         }
 
         try {
-            String psql = convertToPageSql(sql, rowBounds);
+            String psql = convertToPageSql(sql);
             log.debug("page sql: {}", psql);
 
-            T rows = namedParameterJdbcOperations.query(psql, sps, rse);
+            GroupSqlParameterSource gsps = new GroupSqlParameterSource(sps);
+            preparePageParams(gsps, rowBounds);
+            T rows = namedParameterJdbcOperations.query(psql, gsps, rse);
             return (T) new PageArrayList<>(rows, total);
         } catch (JSQLParserException e) {
             log.error("convert to page sql error [{}]", sql);
@@ -112,7 +115,7 @@ public abstract class AbstractDialect implements Dialect {
         SelectBody body = ((Select) stmt).getSelectBody();
         cleanSelect(body);
 
-        if (body instanceof PlainSelect && isSimpleCount((PlainSelect) body)) {
+        if (body instanceof PlainSelect && isSimpleCountSql((PlainSelect) body)) {
             PlainSelect ps = (PlainSelect) body;
             ps.setSelectItems(COUNT_SELECT_ITEMS);
             csql = ps.toString();
@@ -156,28 +159,35 @@ public abstract class AbstractDialect implements Dialect {
 
     /**
      * @param sql
+     *
+     */
+    protected abstract String convertToPageSql(String sql) throws JSQLParserException;
+
+    /**
+     *
+     * @param gsps
      * @param rowBounds
+     */
+    protected abstract void preparePageParams(GroupSqlParameterSource gsps, RowBounds rowBounds);
+
+    /**
+     *
+     * @param select
      * @return
      */
-    protected abstract String convertToPageSql(String sql, RowBounds rowBounds) throws JSQLParserException;
-
-    protected boolean isSimpleCount(PlainSelect select) {
-        //包含group by的时候不可以
+    protected boolean isSimpleCountSql(PlainSelect select) {
         if (select.getGroupByColumnReferences() != null) {
             return false;
         }
 
-        //包含distinct的时候不可以
         if (select.getDistinct() != null) {
             return false;
         }
 
         for (SelectItem item : select.getSelectItems()) {
-            // select列中包含参数的时候不可以，否则会引起参数个数错误
             if (item.toString().contains("?")) {
                 return false;
             }
-            //如果查询列中包含函数，也不可以，函数可能会聚合列
             if (item instanceof SelectExpressionItem) {
                 if (((SelectExpressionItem) item).getExpression() instanceof Function) {
                     return false;

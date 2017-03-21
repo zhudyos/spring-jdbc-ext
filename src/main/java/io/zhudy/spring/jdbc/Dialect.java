@@ -8,8 +8,6 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
  */
 public interface Dialect {
 
-//    MySQL, MarriaDB, Oracle, PostgreSQL, Sqlite
-
     /**
      * @param <T>
      * @param sql
@@ -20,4 +18,29 @@ public interface Dialect {
      */
     <T> T query(String sql, SqlParameterSource sps, ResultSetExtractor<T> rse, RowBounds rowBounds);
 
+    /**
+     *
+     */
+    enum Type {
+        MySQL, MarriaDB, Oracle, PostgreSQL, SQLite;
+
+        public static Type from(String s) {
+            if ("MySQL".equalsIgnoreCase(s)) {
+                return MySQL;
+            }
+            if ("MarriaDb".equalsIgnoreCase(s)) {
+                return MarriaDB;
+            }
+            if ("Oracle".equalsIgnoreCase(s)) {
+                return Oracle;
+            }
+            if ("PostgreSQL".equalsIgnoreCase(s)) {
+                return PostgreSQL;
+            }
+            if ("SQLite".equalsIgnoreCase(s)) {
+                return SQLite;
+            }
+            throw new IllegalArgumentException("未找到[" + s + "]数据库类型");
+        }
+    }
 }

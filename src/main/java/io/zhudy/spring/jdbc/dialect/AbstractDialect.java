@@ -4,6 +4,8 @@ import io.zhudy.spring.jdbc.Dialect;
 import io.zhudy.spring.jdbc.PageQueryException;
 import io.zhudy.spring.jdbc.RowBounds;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Alias;
+import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
@@ -27,15 +29,31 @@ public abstract class AbstractDialect implements Dialect {
     private static final Logger log = LoggerFactory.getLogger(AbstractDialect.class);
 
     private static final boolean CACHE_ENABLED = Boolean.valueOf(System.getProperty("io.zhudy.spring.jdbc.countSql.cacheEnabled", "true"));
+    private static final Map<Integer, String> CACHE_COUNT_SQL = new HashMap<>();
 
-    private static final List<SelectItem> COUNT_SELECT_ITEMS = new ArrayList<SelectItem>(1) {
+    /**
+     *
+     */
+    protected static final List<SelectItem> COUNT_SELECT_ITEMS = new ArrayList<SelectItem>(1) {
         {
             add(new SelectExpressionItem(new Column("count(1)")));
         }
     };
-    private static final Map<Integer, String> CACHE_COUNT_SQL = new HashMap<>();
+    /**
+     *
+     */
+    protected static final Alias TABLE_ALIAS = new Alias("zd_pnt_") {
+        {
+            setUseAs(false);
+        }
+    };
 
-    private final ResultSetExtractor<Long> COUNT_RSE = rs -> rs.getLong(1);
+    private final ResultSetExtractor<Long> COUNT_RSE = rs -> {
+        if (rs.next()) {
+            return rs.getLong(1);
+        }
+        throw new RuntimeException("获取 COUNT 错误");
+    };
 
 
     protected NamedParameterJdbcOperations namedParameterJdbcOperations;
@@ -51,12 +69,12 @@ public abstract class AbstractDialect implements Dialect {
         long total;
         try {
             String csql = getCountSql(sql);
-            log.debug("count sql: {}", sql);
+            log.debug("count sql: {}", csql);
 
             total = namedParameterJdbcOperations.query(csql, sps, COUNT_RSE);
             log.debug("total: {}", total);
             if (total <= 0) {
-                return (T)new PageArrayList<>(total);
+                return (T) new PageArrayList<>(total);
             }
         } catch (JSQLParserException e) {
             log.error("convert to count sql error [{}]", sql);
@@ -94,20 +112,18 @@ public abstract class AbstractDialect implements Dialect {
         SelectBody body = ((Select) stmt).getSelectBody();
         cleanSelect(body);
 
-        if (body instanceof PlainSelect) {
+        if (body instanceof PlainSelect && isSimpleCount((PlainSelect) body)) {
             PlainSelect ps = (PlainSelect) body;
             ps.setSelectItems(COUNT_SELECT_ITEMS);
-
             csql = ps.toString();
         } else {
             PlainSelect ps = new PlainSelect();
-
             SubSelect ss = new SubSelect();
             ss.setSelectBody(body);
 
             ps.setFromItem(ss);
             ps.setSelectItems(COUNT_SELECT_ITEMS);
-
+            ss.setAlias(TABLE_ALIAS);
             csql = ps.toString();
         }
 
@@ -145,4 +161,29 @@ public abstract class AbstractDialect implements Dialect {
      */
     protected abstract String convertToPageSql(String sql, RowBounds rowBounds) throws JSQLParserException;
 
+    protected boolean isSimpleCount(PlainSelect select) {
+        //包含group by的时候不可以
+        if (select.getGroupByColumnReferences() != null) {
+            return false;
+        }
+
+        //包含distinct的时候不可以
+        if (select.getDistinct() != null) {
+            return false;
+        }
+
+        for (SelectItem item : select.getSelectItems()) {
+            // select列中包含参数的时候不可以，否则会引起参数个数错误
+            if (item.toString().contains("?")) {
+                return false;
+            }
+            //如果查询列中包含函数，也不可以，函数可能会聚合列
+            if (item instanceof SelectExpressionItem) {
+                if (((SelectExpressionItem) item).getExpression() instanceof Function) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

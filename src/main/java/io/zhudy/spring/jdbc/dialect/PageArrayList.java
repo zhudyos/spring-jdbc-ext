@@ -30,4 +30,11 @@ class PageArrayList<T> extends ArrayList implements Page<T> {
     public T getRows() {
         return (T) this;
     }
+
+    @Override
+    public String toString() {
+        return "{total=" + total +
+                ", rows=" + super.toString() +
+                '}';
+    }
 }

@@ -1,15 +1,14 @@
 package io.zhudy.spring.jdbc;
 
+import io.zhudy.spring.jdbc.dialect.MySQLDialect;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.*;
-import org.springframework.jdbc.core.namedparam.EmptySqlParameterSource;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.jdbc.core.namedparam.*;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.util.Assert;
 
+import java.sql.DatabaseMetaData;
 import java.util.List;
 import java.util.Map;
 
@@ -21,11 +20,27 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
     private NamedParameterJdbcOperations namedParameterJdbcOperations;
     private Dialect dialect;
 
+    /**
+     * @param namedParameterJdbcOperations
+     */
     public PageNamedParameterJdbcTemplate(NamedParameterJdbcOperations namedParameterJdbcOperations) {
         Assert.notNull(namedParameterJdbcOperations);
-
         this.namedParameterJdbcOperations = namedParameterJdbcOperations;
-        // FIXME 初始化 dialect
+
+        // 获取数据库类型
+        Dialect.Type dbType = this.namedParameterJdbcOperations.getJdbcOperations().execute(
+                (ConnectionCallback<Dialect.Type>) con -> {
+                    DatabaseMetaData metaData = con.getMetaData();
+                    String s = metaData.getDatabaseProductName();
+                    return Dialect.Type.from(s);
+                });
+
+        switch (dbType) {
+            case MySQL:
+            case MarriaDB:
+                dialect = new MySQLDialect(namedParameterJdbcOperations);
+                break;
+        }
     }
 
     @Override
@@ -105,7 +120,11 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
     @Override
     public <T> T queryForObject(String sql, SqlParameterSource paramSource, RowMapper<T> rowMapper) throws DataAccessException {
         return namedParameterJdbcOperations.query(sql, paramSource, rs -> {
-            return rowMapper.mapRow(rs, 1);
+            T r = null;
+            if (rs.next()) {
+                r = rowMapper.mapRow(rs, 0);
+            }
+            return r;
         });
     }
 
@@ -166,7 +185,7 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
 
     @Override
     public List<Map<String, Object>> queryForList(String sql, SqlParameterSource paramSource) throws DataAccessException {
-        return null;
+        return query(sql, paramSource, new ColumnMapRowMapper());
     }
 
     @Override

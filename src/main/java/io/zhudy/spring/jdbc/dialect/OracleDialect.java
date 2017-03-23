@@ -15,7 +15,7 @@ import java.sql.Types;
 public class OracleDialect extends AbstractDialect {
 
     private static final String START_ROW_PARAM_NAME = "__start_row__";
-    private static final String END_ROW_PARAN_NAME = "__end_row__";
+    private static final String END_ROW_PARAM_NAME = "__end_row__";
 
     public OracleDialect(NamedParameterJdbcOperations namedParameterJdbcOperations) {
         super(namedParameterJdbcOperations);
@@ -32,7 +32,7 @@ public class OracleDialect extends AbstractDialect {
         sb.append("select * from (select __tmp_page.*, ROWNUM __rn from (")
                 .append(sql)
                 .append(") __tmp_page where __rn<=")
-                .append(":").append(END_ROW_PARAN_NAME)
+                .append(":").append(END_ROW_PARAM_NAME)
                 .append(")").append(" where __rn>")
                 .append(":").append(START_ROW_PARAM_NAME);
         return sb.toString();
@@ -41,7 +41,7 @@ public class OracleDialect extends AbstractDialect {
     @Override
     protected void preparePageParams(GroupSqlParameterSource gsps, RowBounds rowBounds) {
         gsps.addValue(START_ROW_PARAM_NAME, rowBounds.getStartRow(), Types.NUMERIC);
-        gsps.addValue(END_ROW_PARAN_NAME, rowBounds.getEndRow(), Types.NUMERIC);
+        gsps.addValue(END_ROW_PARAM_NAME, rowBounds.getEndRow(), Types.NUMERIC);
     }
 
     public static void main(String[] args) throws JSQLParserException {

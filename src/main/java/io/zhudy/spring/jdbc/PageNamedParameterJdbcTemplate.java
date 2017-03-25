@@ -1,6 +1,8 @@
 package io.zhudy.spring.jdbc;
 
 import io.zhudy.spring.jdbc.dialect.MySQLDialect;
+import io.zhudy.spring.jdbc.dialect.OracleDialect;
+import io.zhudy.spring.jdbc.dialect.PostgreSQLDialect;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.core.namedparam.*;
@@ -13,6 +15,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * {@link NamedParameterJdbcOperations} 分页查询实现.
+ * <p>
+ * 支持的接口:
+ * </p>
+ * <ul>
+ * <li>{@link #query(String, ResultSetExtractor)}</li>
+ * <li>{@link #query(String, RowMapper)}</li>
+ * <li>{@link #query(String, Map, ResultSetExtractor)}</li>
+ * <li>{@link #query(String, Map, RowMapper)}</li>
+ * <li>{@link #query(String, SqlParameterSource, ResultSetExtractor)}</li>
+ * <li>{@link #query(String, SqlParameterSource, RowMapper)}</li>
+ * <li>{@link #queryForList(String, Map)}</li>
+ * <li>{@link #queryForList(String, SqlParameterSource)}</li>
+ * </ul>
+ *
  * @author Kevin Zou <kevinz@weghst.com>
  */
 public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperations {
@@ -38,7 +55,14 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
         switch (dbType) {
             case MySQL:
             case MarriaDB:
+            case SQLite:
                 dialect = new MySQLDialect(namedParameterJdbcOperations);
+                break;
+            case Oracle:
+                dialect = new OracleDialect(namedParameterJdbcOperations);
+                break;
+            case PostgreSQL:
+                dialect = new PostgreSQLDialect(namedParameterJdbcOperations);
                 break;
         }
     }
@@ -122,7 +146,7 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
         return namedParameterJdbcOperations.query(sql, paramSource, rs -> {
             T r = null;
             if (rs.next()) {
-                r = rowMapper.mapRow(rs, 0);
+                r = rowMapper.mapRow(rs, 1);
             }
             return r;
         });
@@ -190,7 +214,7 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
 
     @Override
     public List<Map<String, Object>> queryForList(String sql, Map<String, ?> paramMap) throws DataAccessException {
-        return queryForList(sql, paramMap);
+        return queryForList(sql, new MapSqlParameterSource(paramMap));
     }
 
     @Override

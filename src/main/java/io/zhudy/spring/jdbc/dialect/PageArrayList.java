@@ -1,14 +1,15 @@
 package io.zhudy.spring.jdbc.dialect;
 
-import io.zhudy.spring.jdbc.Page;
+import io.zhudy.spring.jdbc.PageResult;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Kevin Zou <kevinz@weghst.com>
  */
-class PageArrayList<T> extends ArrayList implements Page<T> {
+class PageArrayList<T> extends ArrayList implements PageResult<T> {
 
     private long total;
 
@@ -27,8 +28,8 @@ class PageArrayList<T> extends ArrayList implements Page<T> {
     }
 
     @Override
-    public T getRows() {
-        return (T) this;
+    public List<T> getRows() {
+        return this;
     }
 
     @Override

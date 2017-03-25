@@ -1,6 +1,8 @@
 package io.zhudy.spring.jdbc;
 
 /**
+ * 分页参数.
+ *
  * @author Kevin Zou <kevinz@weghst.com>
  */
 public class RowBounds {

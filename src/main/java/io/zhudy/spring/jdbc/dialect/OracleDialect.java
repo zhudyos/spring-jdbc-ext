@@ -3,9 +3,7 @@ package io.zhudy.spring.jdbc.dialect;
 import io.zhudy.spring.jdbc.GroupSqlParameterSource;
 import io.zhudy.spring.jdbc.RowBounds;
 import net.sf.jsqlparser.JSQLParserException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.sql.Types;
 
@@ -42,12 +40,6 @@ public class OracleDialect extends AbstractDialect {
     protected void preparePageParams(GroupSqlParameterSource gsps, RowBounds rowBounds) {
         gsps.addValue(START_ROW_PARAM_NAME, rowBounds.getStartRow(), Types.NUMERIC);
         gsps.addValue(END_ROW_PARAM_NAME, rowBounds.getEndRow(), Types.NUMERIC);
-    }
-
-    public static void main(String[] args) throws JSQLParserException {
-        OracleDialect d = new OracleDialect(new NamedParameterJdbcTemplate(new JdbcTemplate()));
-        String s = d.convertToPageSql("SELECT * FROM TABLE_NAME");
-        System.out.println(s);
     }
 
 }

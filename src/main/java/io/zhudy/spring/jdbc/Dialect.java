@@ -4,25 +4,27 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 
 /**
+ * 数据库分页查询接口.
  * @author Kevin Zou <kevinz@weghst.com>
  */
 public interface Dialect {
 
     /**
-     * @param <T>
-     * @param sql
-     * @param sps
-     * @param rse
-     * @param rowBounds
-     * @return
+     * 执行分页查询.
+     * @param <T> 返回类型
+     * @param sql SQL
+     * @param sps {@link SqlParameterSource}
+     * @param rse  {@link ResultSetExtractor}
+     * @param rowBounds 分页参数
+     * @return 查询结果集
      */
     <T> T query(String sql, SqlParameterSource sps, ResultSetExtractor<T> rse, RowBounds rowBounds);
 
     /**
-     *
+     * 数据库类型枚举.
      */
     enum Type {
-        MySQL, MarriaDB, Oracle, PostgreSQL, SQLite;
+        MySQL, MarriaDB, Oracle, PostgreSQL, Informix, SQLServer, SQLite;
 
         public static Type from(String s) {
             if ("MySQL".equalsIgnoreCase(s)) {

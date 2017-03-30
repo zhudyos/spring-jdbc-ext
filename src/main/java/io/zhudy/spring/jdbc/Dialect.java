@@ -6,7 +6,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 /**
  * 数据库分页查询接口.
  *
- * @author Kevin Zou <kevinz@weghst.com>
+ * @author Kevin Zou (kevinz@weghst.com)
  */
 public interface Dialect {
 

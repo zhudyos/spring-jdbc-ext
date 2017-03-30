@@ -1,7 +1,7 @@
 package io.zhudy.spring.jdbc;
 
 /**
- * @author Kevin Zou <kevinz@weghst.com>
+ * @author Kevin Zou (kevinz@weghst.com)
  */
 public class PageQueryException extends RuntimeException {
 

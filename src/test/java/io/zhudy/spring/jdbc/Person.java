@@ -3,7 +3,7 @@ package io.zhudy.spring.jdbc;
 import lombok.Data;
 
 /**
- * @author Kevin Zou <kevinz@weghst.com>
+ * @author Kevin Zou (kevinz@weghst.com)
  */
 @Data
 public class Person {

@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * @author Kevin Zou <kevinz@weghst.com>
+ * @author Kevin Zou (kevinz@weghst.com)
  */
 class PageArrayList<T> extends ArrayList implements PageResult<T> {
 

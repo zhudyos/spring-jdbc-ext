@@ -24,7 +24,7 @@ import java.util.List;
 import static org.testng.Assert.assertTrue;
 
 /**
- * @author Kevin Zou <kevinz@weghst.com>
+ * @author Kevin Zou (kevinz@weghst.com)
  */
 @ContextConfiguration(locations = "classpath*:test-context.xml")
 public class PageNamedParameterJdbcTemplateTest extends AbstractTestNGSpringContextTests {

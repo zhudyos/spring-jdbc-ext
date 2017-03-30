@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import java.sql.Types;
 
 /**
- * @author Kevin Zou <kevinz@weghst.com>
+ * @author Kevin Zou (kevinz@weghst.com)
  */
 public class InformixDialect extends AbstractDialect {
 

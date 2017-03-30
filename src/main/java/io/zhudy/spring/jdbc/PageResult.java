@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * SQL 分页结果集.
  *
- * @author Kevin Zou <kevinz@weghst.com>
+ * @author Kevin Zou (kevinz@weghst.com)
  */
 public interface PageResult<T> {
 

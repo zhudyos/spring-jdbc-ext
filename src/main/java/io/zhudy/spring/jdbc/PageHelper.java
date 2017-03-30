@@ -6,7 +6,7 @@ import org.springframework.util.Assert;
 /**
  * 分页查询工具类.
  *
- * @author Kevin Zou <kevinz@weghst.com>
+ * @author Kevin Zou (kevinz@weghst.com)
  */
 public final class PageHelper {
 

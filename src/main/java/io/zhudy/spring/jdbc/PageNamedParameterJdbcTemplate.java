@@ -1,14 +1,11 @@
 package io.zhudy.spring.jdbc;
 
-import io.zhudy.spring.jdbc.dialect.MySQLDialect;
-import io.zhudy.spring.jdbc.dialect.OracleDialect;
-import io.zhudy.spring.jdbc.dialect.PostgreSQLDialect;
+import io.zhudy.spring.jdbc.dialect.*;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.core.namedparam.*;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
-import org.springframework.util.Assert;
 
 import java.sql.DatabaseMetaData;
 import java.util.List;
@@ -32,20 +29,20 @@ import java.util.Map;
  *
  * @author Kevin Zou <kevinz@weghst.com>
  */
-public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperations {
+public class PageNamedParameterJdbcTemplate extends NamedParameterJdbcTemplate {
 
-    private NamedParameterJdbcOperations namedParameterJdbcOperations;
+    private NamedParameterJdbcOperations delegate;
     private Dialect dialect;
 
     /**
      * @param namedParameterJdbcOperations
      */
     public PageNamedParameterJdbcTemplate(NamedParameterJdbcOperations namedParameterJdbcOperations) {
-        Assert.notNull(namedParameterJdbcOperations);
-        this.namedParameterJdbcOperations = namedParameterJdbcOperations;
+        super(namedParameterJdbcOperations.getJdbcOperations());
+        this.delegate = namedParameterJdbcOperations;
 
         // 获取数据库类型
-        Dialect.Type dbType = this.namedParameterJdbcOperations.getJdbcOperations().execute(
+        Dialect.Type dbType = this.getJdbcOperations().execute(
                 (ConnectionCallback<Dialect.Type>) con -> {
                     DatabaseMetaData metaData = con.getMetaData();
                     String s = metaData.getDatabaseProductName();
@@ -56,35 +53,43 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
             case MySQL:
             case MarriaDB:
             case SQLite:
-                dialect = new MySQLDialect(namedParameterJdbcOperations);
+                dialect = new MySQLDialect(delegate);
                 break;
             case Oracle:
-                dialect = new OracleDialect(namedParameterJdbcOperations);
+                dialect = new OracleDialect(delegate);
                 break;
             case PostgreSQL:
-                dialect = new PostgreSQLDialect(namedParameterJdbcOperations);
+                dialect = new PostgreSQLDialect(delegate);
                 break;
+            case SQLServer:
+                dialect = new SQLServerDialect(delegate);
+                break;
+            case Informix:
+                dialect = new InformixDialect(delegate);
+                break;
+            default:
+                throw new IllegalStateException("未发现的数据库类型 [" + dbType + "]");
         }
     }
 
     @Override
     public JdbcOperations getJdbcOperations() {
-        return namedParameterJdbcOperations.getJdbcOperations();
+        return delegate.getJdbcOperations();
     }
 
     @Override
     public <T> T execute(String sql, SqlParameterSource paramSource, PreparedStatementCallback<T> action) throws DataAccessException {
-        return namedParameterJdbcOperations.execute(sql, paramSource, action);
+        return delegate.execute(sql, paramSource, action);
     }
 
     @Override
     public <T> T execute(String sql, Map<String, ?> paramMap, PreparedStatementCallback<T> action) throws DataAccessException {
-        return namedParameterJdbcOperations.execute(sql, paramMap, action);
+        return delegate.execute(sql, paramMap, action);
     }
 
     @Override
     public <T> T execute(String sql, PreparedStatementCallback<T> action) throws DataAccessException {
-        return namedParameterJdbcOperations.execute(sql, action);
+        return delegate.execute(sql, action);
     }
 
     @Override
@@ -98,7 +103,7 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
                 PageHelper.clear();
             }
         }
-        return namedParameterJdbcOperations.query(sql, paramSource, rse);
+        return delegate.query(sql, paramSource, rse);
     }
 
     @Override
@@ -113,17 +118,17 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
 
     @Override
     public void query(String sql, SqlParameterSource paramSource, RowCallbackHandler rch) throws DataAccessException {
-        namedParameterJdbcOperations.query(sql, paramSource, rch);
+        delegate.query(sql, paramSource, rch);
     }
 
     @Override
     public void query(String sql, Map<String, ?> paramMap, RowCallbackHandler rch) throws DataAccessException {
-        namedParameterJdbcOperations.query(sql, paramMap, rch);
+        delegate.query(sql, paramMap, rch);
     }
 
     @Override
     public void query(String sql, RowCallbackHandler rch) throws DataAccessException {
-        namedParameterJdbcOperations.query(sql, rch);
+        delegate.query(sql, rch);
     }
 
     @Override
@@ -143,7 +148,7 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
 
     @Override
     public <T> T queryForObject(String sql, SqlParameterSource paramSource, RowMapper<T> rowMapper) throws DataAccessException {
-        return namedParameterJdbcOperations.query(sql, paramSource, rs -> {
+        return delegate.query(sql, paramSource, rs -> {
             T r = null;
             if (rs.next()) {
                 r = rowMapper.mapRow(rs, 1);
@@ -159,42 +164,42 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
 
     @Override
     public <T> T queryForObject(String sql, SqlParameterSource paramSource, Class<T> requiredType) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForObject(sql, paramSource, requiredType);
+        return delegate.queryForObject(sql, paramSource, requiredType);
     }
 
     @Override
     public <T> T queryForObject(String sql, Map<String, ?> paramMap, Class<T> requiredType) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForObject(sql, paramMap, requiredType);
+        return delegate.queryForObject(sql, paramMap, requiredType);
     }
 
     @Override
     public Map<String, Object> queryForMap(String sql, SqlParameterSource paramSource) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForMap(sql, paramSource);
+        return delegate.queryForMap(sql, paramSource);
     }
 
     @Override
     public Map<String, Object> queryForMap(String sql, Map<String, ?> paramMap) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForMap(sql, paramMap);
+        return delegate.queryForMap(sql, paramMap);
     }
 
     @Override
     public long queryForLong(String sql, SqlParameterSource paramSource) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForLong(sql, paramSource);
+        return delegate.queryForLong(sql, paramSource);
     }
 
     @Override
     public long queryForLong(String sql, Map<String, ?> paramMap) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForLong(sql, paramMap);
+        return delegate.queryForLong(sql, paramMap);
     }
 
     @Override
     public int queryForInt(String sql, SqlParameterSource paramSource) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForInt(sql, paramSource);
+        return delegate.queryForInt(sql, paramSource);
     }
 
     @Override
     public int queryForInt(String sql, Map<String, ?> paramMap) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForInt(sql, paramMap);
+        return delegate.queryForInt(sql, paramMap);
     }
 
     @Override
@@ -219,41 +224,41 @@ public class PageNamedParameterJdbcTemplate implements NamedParameterJdbcOperati
 
     @Override
     public SqlRowSet queryForRowSet(String sql, SqlParameterSource paramSource) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForRowSet(sql, paramSource);
+        return delegate.queryForRowSet(sql, paramSource);
     }
 
     @Override
     public SqlRowSet queryForRowSet(String sql, Map<String, ?> paramMap) throws DataAccessException {
-        return namedParameterJdbcOperations.queryForRowSet(sql, paramMap);
+        return delegate.queryForRowSet(sql, paramMap);
     }
 
     @Override
     public int update(String sql, SqlParameterSource paramSource) throws DataAccessException {
-        return namedParameterJdbcOperations.update(sql, paramSource);
+        return delegate.update(sql, paramSource);
     }
 
     @Override
     public int update(String sql, Map<String, ?> paramMap) throws DataAccessException {
-        return namedParameterJdbcOperations.update(sql, paramMap);
+        return delegate.update(sql, paramMap);
     }
 
     @Override
     public int update(String sql, SqlParameterSource paramSource, KeyHolder generatedKeyHolder) throws DataAccessException {
-        return namedParameterJdbcOperations.update(sql, paramSource, generatedKeyHolder);
+        return delegate.update(sql, paramSource, generatedKeyHolder);
     }
 
     @Override
     public int update(String sql, SqlParameterSource paramSource, KeyHolder generatedKeyHolder, String[] keyColumnNames) throws DataAccessException {
-        return namedParameterJdbcOperations.update(sql, paramSource, generatedKeyHolder, keyColumnNames);
+        return delegate.update(sql, paramSource, generatedKeyHolder, keyColumnNames);
     }
 
     @Override
     public int[] batchUpdate(String sql, Map<String, ?>[] batchValues) {
-        return namedParameterJdbcOperations.batchUpdate(sql, batchValues);
+        return delegate.batchUpdate(sql, batchValues);
     }
 
     @Override
     public int[] batchUpdate(String sql, SqlParameterSource[] batchArgs) {
-        return namedParameterJdbcOperations.batchUpdate(sql, batchArgs);
+        return delegate.batchUpdate(sql, batchArgs);
     }
 }

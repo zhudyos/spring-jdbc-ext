@@ -18,9 +18,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Kevin Zou <kevinz@weghst.com>
@@ -29,11 +29,12 @@ public abstract class AbstractDialect implements Dialect {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractDialect.class);
 
-    private static final boolean CACHE_ENABLED = Boolean.valueOf(System.getProperty("io.zhudy.spring.jdbc.countSql.cacheEnabled", "true"));
-    private static final Map<Integer, String> CACHE_COUNT_SQL = new HashMap<>();
+    private static final boolean CACHE_ENABLED = Boolean.valueOf(System.getProperty("io.zhudy.spring.jdbc.sql.cacheEnabled", "true"));
+    private Map<Integer, String> cacheCountSql;
+    private Map<Integer, String> cachePageSql;
 
     /**
-     *
+     * COUNT 查询项.
      */
     protected static final List<SelectItem> COUNT_SELECT_ITEMS = new ArrayList<SelectItem>(1) {
         {
@@ -41,7 +42,7 @@ public abstract class AbstractDialect implements Dialect {
         }
     };
     /**
-     *
+     * 分页查询表别名.
      */
     protected static final Alias TABLE_ALIAS = new Alias("zd_pnt_") {
         {
@@ -61,15 +62,20 @@ public abstract class AbstractDialect implements Dialect {
 
     protected AbstractDialect(NamedParameterJdbcOperations namedParameterJdbcOperations) {
         this.namedParameterJdbcOperations = namedParameterJdbcOperations;
+        if (CACHE_ENABLED) {
+            cacheCountSql = new ConcurrentHashMap<>();
+            cachePageSql = new ConcurrentHashMap<>();
+        }
     }
 
     @Override
     public <T> T query(String sql, SqlParameterSource sps, ResultSetExtractor<T> rse, RowBounds rowBounds) {
         log.debug("origin sql: {}", sql);
+        int k = sql.hashCode();
 
         long total;
         try {
-            String csql = getCountSql(sql);
+            String csql = getCountSql(sql, k);
             log.debug("count sql: {}", csql);
 
             total = namedParameterJdbcOperations.query(csql, sps, COUNT_RSE);
@@ -83,7 +89,7 @@ public abstract class AbstractDialect implements Dialect {
         }
 
         try {
-            String psql = convertToPageSql(sql);
+            String psql = getPageSql(sql, k);
             log.debug("page sql: {}", psql);
 
             GroupSqlParameterSource gsps = new GroupSqlParameterSource(sps);
@@ -96,17 +102,16 @@ public abstract class AbstractDialect implements Dialect {
         }
     }
 
-    private String getCountSql(String sql) throws JSQLParserException {
-        int k = sql.hashCode();
+    private String getCountSql(String sql, int k) throws JSQLParserException {
         String csql;
-        if (CACHE_ENABLED && (csql = CACHE_COUNT_SQL.get(k)) != null) {
+        if (CACHE_ENABLED && (csql = cacheCountSql.get(k)) != null) {
             return csql;
         }
 
         csql = convertToCountSql(sql);
         if (csql != null) {
             if (CACHE_ENABLED) {
-                CACHE_COUNT_SQL.put(k, csql);
+                cacheCountSql.put(k, csql);
             }
             return csql;
         }
@@ -130,8 +135,21 @@ public abstract class AbstractDialect implements Dialect {
             csql = ps.toString();
         }
 
-        CACHE_COUNT_SQL.put(k, csql);
+        cacheCountSql.put(k, csql);
         return csql;
+    }
+
+    private String getPageSql(String sql, int k) throws JSQLParserException {
+        String psql;
+        if (CACHE_ENABLED && (psql = cachePageSql.get(k)) != null) {
+            return psql;
+        }
+
+        psql = convertToPageSql(sql);
+        if (CACHE_ENABLED) {
+            cachePageSql.put(k, psql);
+        }
+        return psql;
     }
 
     protected void cleanSelect(SelectBody sb) {
@@ -152,28 +170,34 @@ public abstract class AbstractDialect implements Dialect {
     }
 
     /**
-     * @param sql
-     * @return
+     * 转换 COUNT SQL.
+     *
+     * @param sql 原 SQL
+     * @return COUNT SQL
      */
     protected abstract String convertToCountSql(String sql) throws JSQLParserException;
 
     /**
-     * @param sql
+     * 转换 Page SQL.
      *
+     * @param sql 原 SQL
+     * @return Page SQL
      */
     protected abstract String convertToPageSql(String sql) throws JSQLParserException;
 
     /**
+     * 设置分页参数.
      *
-     * @param gsps
-     * @param rowBounds
+     * @param gsps      JDBC 参数源
+     * @param rowBounds 分页参数
      */
     protected abstract void preparePageParams(GroupSqlParameterSource gsps, RowBounds rowBounds);
 
     /**
+     * 判断是否可以使用简单的 COUNT SQL.
      *
-     * @param select
-     * @return
+     * @param select SELECT
+     * @return true/false
      */
     protected boolean isSimpleCountSql(PlainSelect select) {
         if (select.getGroupByColumnReferences() != null) {

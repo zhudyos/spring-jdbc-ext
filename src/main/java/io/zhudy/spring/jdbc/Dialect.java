@@ -5,16 +5,18 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 
 /**
  * 数据库分页查询接口.
+ *
  * @author Kevin Zou <kevinz@weghst.com>
  */
 public interface Dialect {
 
     /**
      * 执行分页查询.
-     * @param <T> 返回类型
-     * @param sql SQL
-     * @param sps {@link SqlParameterSource}
-     * @param rse  {@link ResultSetExtractor}
+     *
+     * @param <T>       返回类型
+     * @param sql       SQL
+     * @param sps       {@link SqlParameterSource}
+     * @param rse       {@link ResultSetExtractor}
      * @param rowBounds 分页参数
      * @return 查询结果集
      */

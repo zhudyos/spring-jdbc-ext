@@ -5,28 +5,7 @@
 * 简单 (命名参数, 类型自动封装)
 * 快速 (运行效率无限接近原生 jdbc)
 
-## Benchmarks
-
-### NamedJdbcTemplate
-```
-Benchmark                                 (maxPoolSize)  (minPoolSize)  Mode  Cnt   Score    Error  Units
-NamedJdbcBenchmark.batchInsert                      100            100  avgt   20  61.684 ± 14.840  ms/op
-NamedJdbcBenchmark.batchInsert2                     100            100  avgt   20  59.116 ± 14.276  ms/op
-NamedJdbcBenchmark.insert                           100            100  avgt   20   1.001 ±  0.522  ms/op
-NamedJdbcBenchmark.queryById                        100            100  avgt   20   0.415 ±  0.060  ms/op
-NamedJdbcBenchmark.queryByIdForManualMap            100            100  avgt   20   0.412 ±  0.064  ms/op
-```
-
-### MyBatis
-```
-Benchmark                               (maxPoolSize)  (minPoolSize)  Mode  Cnt    Score    Error  Units
-MybatisBenchmark.batchInsert                      100            100  avgt   20  127.238 ± 27.799  ms/op
-MybatisBenchmark.insert                           100            100  avgt   20    0.821 ±  0.210  ms/op
-MybatisBenchmark.queryById                        100            100  avgt   20    0.633 ±  0.089  ms/op
-MybatisBenchmark.queryByIdForManualMap            100            100  avgt   20    0.717 ±  0.182  ms/op
-```
-
-https://github.com/zhudyos/namedjdbc-mybatis-benchmarks[测试代码]
+https://github.com/zhudyos/namedjdbc-mybatis-benchmarks[Benchmarks 测试]
 
 ---
 

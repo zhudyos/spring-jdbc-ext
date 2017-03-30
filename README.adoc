@@ -1,2 +1,67 @@
-# spring-jdbc-ext
-Spring Jdbc Extension
+# Spring NamedParameterJdbcTemplate 扩展实现
+
+为什么要使用`PageNamedParameterJdbcTemplate`
+
+* 简单 (命名参数, 类型自动封装)
+* 快速 (运行效率无限接近原生 jdbc)
+
+## Benchmarks
+
+### NamedJdbcTemplate
+```
+Benchmark                                 (maxPoolSize)  (minPoolSize)  Mode  Cnt   Score    Error  Units
+NamedJdbcBenchmark.batchInsert                      100            100  avgt   20  61.684 ± 14.840  ms/op
+NamedJdbcBenchmark.batchInsert2                     100            100  avgt   20  59.116 ± 14.276  ms/op
+NamedJdbcBenchmark.insert                           100            100  avgt   20   1.001 ±  0.522  ms/op
+NamedJdbcBenchmark.queryById                        100            100  avgt   20   0.415 ±  0.060  ms/op
+NamedJdbcBenchmark.queryByIdForManualMap            100            100  avgt   20   0.412 ±  0.064  ms/op
+```
+
+### MyBatis
+```
+Benchmark                               (maxPoolSize)  (minPoolSize)  Mode  Cnt    Score    Error  Units
+MybatisBenchmark.batchInsert                      100            100  avgt   20  127.238 ± 27.799  ms/op
+MybatisBenchmark.insert                           100            100  avgt   20    0.821 ±  0.210  ms/op
+MybatisBenchmark.queryById                        100            100  avgt   20    0.633 ±  0.089  ms/op
+MybatisBenchmark.queryByIdForManualMap            100            100  avgt   20    0.717 ±  0.182  ms/op
+```
+
+https://github.com/zhudyos/namedjdbc-mybatis-benchmarks[测试代码]
+
+---
+
+比如我们向数据库插入(insert)一条数据
+
+```java
+Person p = new Person();
+p.setName("kevin");
+p.setAddress("Shanghai");
+p.setCountry("China");
+
+namedTemplate.update(
+  "insert into t_person(name, address, country) values(:name,:address,:country)",
+  new BeanPropertySqlParameterSource(p))
+```
+
+查询`Person`数据
+```
+List<Person> persons = namedTemplate.query(
+  "select * from person",
+  EmptySqlParameterSource.INSTANCE,
+  BeanPropertyRowMapper.newInstance(Person.class));
+```
+
+分页数据查询
+```
+int offset = 10, limit = 5;
+PageHelper.set(offset, limit);  // 设置分页参数
+
+String sql = "SELECT * FROM person";
+PageResult<Person> pageResult = (PageResult) namedTemplate.query(
+  "SELECT * FROM person",
+  EmptySqlParameterSource.INSTANCE,
+  BeanPropertyRowMapper.newInstance(Person.class));
+
+long total = pageResult.getTotal(); // 总记录数
+List<Person> persons = pageResult.getRows(); // 对应页码的行记录列表
+```

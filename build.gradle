@@ -11,13 +11,13 @@ buildscript {
     }
 }
 
-group 'io.zhudy.spring'
-archivesBaseName 'spring-jdbc-ext'
-version '1.0-SNAPSHOT'
-
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
+
+group 'io.zhudy.spring'
+version '1.0-SNAPSHOT'
+archivesBaseName = 'spring-jdbc-ext'
 
 compileJava {
     sourceCompatibility = 1.8

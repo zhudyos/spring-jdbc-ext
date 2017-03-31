@@ -18,6 +18,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,8 +31,8 @@ public abstract class AbstractDialect implements Dialect {
     private static final Logger log = LoggerFactory.getLogger(AbstractDialect.class);
 
     private static final boolean CACHE_ENABLED = Boolean.valueOf(System.getProperty("io.zhudy.spring.jdbc.sql.cacheEnabled", "true"));
-    private Map<Integer, String> cacheCountSql;
-    private Map<Integer, String> cachePageSql;
+    private final Map<Integer, String> countSqlCache = new LinkedHashMap<>();
+    private final Map<Integer, String> pageSqlCache = new LinkedHashMap<>();
 
     /**
      * COUNT 查询项.
@@ -62,10 +63,6 @@ public abstract class AbstractDialect implements Dialect {
 
     protected AbstractDialect(NamedParameterJdbcOperations namedParameterJdbcOperations) {
         this.namedParameterJdbcOperations = namedParameterJdbcOperations;
-        if (CACHE_ENABLED) {
-            cacheCountSql = new ConcurrentHashMap<>();
-            cachePageSql = new ConcurrentHashMap<>();
-        }
     }
 
     @Override
@@ -104,52 +101,56 @@ public abstract class AbstractDialect implements Dialect {
 
     private String getCountSql(String sql, int k) throws JSQLParserException {
         String csql;
-        if (CACHE_ENABLED && (csql = cacheCountSql.get(k)) != null) {
+        if (CACHE_ENABLED && (csql = countSqlCache.get(k)) != null) {
             return csql;
         }
 
-        csql = convertToCountSql(sql);
-        if (csql != null) {
-            if (CACHE_ENABLED) {
-                cacheCountSql.put(k, csql);
+        synchronized (countSqlCache) {
+            csql = convertToCountSql(sql);
+            if (csql != null) {
+                if (CACHE_ENABLED) {
+                    countSqlCache.put(k, csql);
+                }
+                return csql;
             }
+
+            Statement stmt = CCJSqlParserUtil.parse(sql);
+            SelectBody body = ((Select) stmt).getSelectBody();
+            cleanSelect(body);
+
+            if (body instanceof PlainSelect && isSimpleCountSql((PlainSelect) body)) {
+                PlainSelect ps = (PlainSelect) body;
+                ps.setSelectItems(COUNT_SELECT_ITEMS);
+                csql = ps.toString();
+            } else {
+                PlainSelect ps = new PlainSelect();
+                SubSelect ss = new SubSelect();
+                ss.setSelectBody(body);
+
+                ps.setFromItem(ss);
+                ps.setSelectItems(COUNT_SELECT_ITEMS);
+                ss.setAlias(TABLE_ALIAS);
+                csql = ps.toString();
+            }
+
+            countSqlCache.put(k, csql);
             return csql;
         }
-
-        Statement stmt = CCJSqlParserUtil.parse(sql);
-        SelectBody body = ((Select) stmt).getSelectBody();
-        cleanSelect(body);
-
-        if (body instanceof PlainSelect && isSimpleCountSql((PlainSelect) body)) {
-            PlainSelect ps = (PlainSelect) body;
-            ps.setSelectItems(COUNT_SELECT_ITEMS);
-            csql = ps.toString();
-        } else {
-            PlainSelect ps = new PlainSelect();
-            SubSelect ss = new SubSelect();
-            ss.setSelectBody(body);
-
-            ps.setFromItem(ss);
-            ps.setSelectItems(COUNT_SELECT_ITEMS);
-            ss.setAlias(TABLE_ALIAS);
-            csql = ps.toString();
-        }
-
-        cacheCountSql.put(k, csql);
-        return csql;
     }
 
     private String getPageSql(String sql, int k) throws JSQLParserException {
         String psql;
-        if (CACHE_ENABLED && (psql = cachePageSql.get(k)) != null) {
+        if (CACHE_ENABLED && (psql = pageSqlCache.get(k)) != null) {
             return psql;
         }
 
-        psql = convertToPageSql(sql);
-        if (CACHE_ENABLED) {
-            cachePageSql.put(k, psql);
+        synchronized (pageSqlCache) {
+            psql = convertToPageSql(sql);
+            if (CACHE_ENABLED) {
+                pageSqlCache.put(k, psql);
+            }
+            return psql;
         }
-        return psql;
     }
 
     protected void cleanSelect(SelectBody sb) {

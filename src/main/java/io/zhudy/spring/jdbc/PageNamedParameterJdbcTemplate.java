@@ -8,6 +8,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
 import java.sql.DatabaseMetaData;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,8 @@ public class PageNamedParameterJdbcTemplate extends NamedParameterJdbcTemplate {
 
     private NamedParameterJdbcOperations delegate;
     private Dialect dialect;
+
+    private final Map<String, ParsedSql> parsedSqlCache = new LinkedHashMap<>();
 
     /**
      * @param namedParameterJdbcOperations
@@ -260,5 +263,20 @@ public class PageNamedParameterJdbcTemplate extends NamedParameterJdbcTemplate {
     @Override
     public int[] batchUpdate(String sql, SqlParameterSource[] batchArgs) {
         return delegate.batchUpdate(sql, batchArgs);
+    }
+
+    @Override
+    protected ParsedSql getParsedSql(String sql) {
+        ParsedSql parsedSql = parsedSqlCache.get(sql);
+        if (parsedSql == null) {
+            synchronized (parsedSqlCache) {
+                parsedSql = parsedSqlCache.get(sql);
+                if (parsedSql == null) {
+                    parsedSql = NamedParameterUtils.parseSqlStatement(sql);
+                    parsedSqlCache.put(sql, parsedSql);
+                }
+            }
+        }
+        return parsedSql;
     }
 }

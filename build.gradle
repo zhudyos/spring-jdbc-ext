@@ -9,11 +9,16 @@ buildscript {
         }
         mavenCentral()
     }
+
+    dependencies {
+        classpath "io.franzbecker:gradle-lombok:1.8"
+    }
 }
 
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
+apply plugin: 'io.franzbecker.gradle-lombok'
 
 group 'io.zhudy.spring'
 version '1.0-SNAPSHOT'
@@ -31,6 +36,11 @@ compileTestJava {
     options.encoding = 'UTF-8'
 }
 
+javadoc {
+    failOnError = false
+    options.encoding = 'UTF-8'
+}
+
 repositories {
     mavenLocal()
     maven {
@@ -39,9 +49,11 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    compileOnly "org.projectlombok:lombok:1.16.16"
+lombok {
+    version = "1.16.16"
+}
 
+dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "org.springframework:spring-jdbc:4.1.7.RELEASE"
     compile "com.github.jsqlparser:jsqlparser:0.9.6"
@@ -77,11 +89,11 @@ uploadArchives {
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
             repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
+                authentication(userName: findProperty("ossrhUsername"), password: findProperty("ossrhPassword"))
             }
 
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
+                authentication(userName: findProperty("ossrhUsername"), password: findProperty("ossrhPassword"))
             }
 
             pom.project {

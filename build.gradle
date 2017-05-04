@@ -63,6 +63,13 @@ dependencies {
     testCompile "org.springframework:spring-test:4.1.7.RELEASE"
     testCompile "org.springframework:spring-context:4.1.7.RELEASE"
     testCompile "org.xerial:sqlite-jdbc:3.16.1"
+
+    testCompile "com.zaxxer:HikariCP:2.6.1"
+    testCompile "com.hynnet:oracle-driver-ojdbc:12.1.0.2"
+    testCompile "com.microsoft.sqlserver:mssql-jdbc:6.1.5.jre8-preview"
+    testCompile "org.postgresql:postgresql:42.0.0"
+    testCompile "org.mariadb.jdbc:mariadb-java-client:1.5.8"
+    testCompile "com.ibm.informix:jdbc:4.10.7.20160517"
 }
 
 task javadocJar(type: Jar) {

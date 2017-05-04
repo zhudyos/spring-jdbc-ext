@@ -32,7 +32,7 @@ public class InformixDialect extends AbstractDialect {
                 .append(" first ").append(":").append(FIRST_PARAM_NAME)
                 .append(" * from (")
                 .append(sql)
-                .append(") __tmp_page");
+                .append(") tmp_page");
         return sb.toString();
     }
 

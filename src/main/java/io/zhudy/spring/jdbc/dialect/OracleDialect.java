@@ -27,11 +27,11 @@ public class OracleDialect extends AbstractDialect {
     @Override
     protected String convertToPageSql(String sql) throws JSQLParserException {
         StringBuilder sb = new StringBuilder(sql.length() + 100);
-        sb.append("select * from (select __tmp_page.*, ROWNUM __rn from (")
+        sb.append("select * from (select tmp_page.*, ROWNUM r_id from (")
                 .append(sql)
-                .append(") __tmp_page where __rn<=")
+                .append(") tmp_page where ROWNUM<=")
                 .append(":").append(END_ROW_PARAM_NAME)
-                .append(")").append(" where __rn>")
+                .append(")").append(" where r_id>")
                 .append(":").append(START_ROW_PARAM_NAME);
         return sb.toString();
     }
